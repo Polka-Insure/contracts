@@ -28,21 +28,21 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     // IWETH public _WETH;
     // address public _uniV2Factory;
     // address public _uniV2Router;
-    // // function initialize(address _nerd) public initializer {
+    // // function initialize(address _pis) public initializer {
     // //     OwnableUpgradeSafe.__Ownable_init();
-    // //     _nerdToken = _nerd;
-    // //     _uniV2Factory = INerdBaseTokenLGE(_nerdToken).getUniswapFactory();
-    // //     _uniV2Router = INerdBaseTokenLGE(_nerdToken).getUniswapRouterV2();
+    // //     _pisToken = _pis;
+    // //     _uniV2Factory = IPISBaseTokenLGE(_pisToken).getUniswapFactory();
+    // //     _uniV2Router = IPISBaseTokenLGE(_pisToken).getUniswapRouterV2();
     // //     _WETH = IWETH(IUniswapV2Router02(_uniV2Router).WETH());
     // //     _feeApprover = IFeeApprover(
-    // //         INerdBaseTokenLGE(_nerdToken).transferCheckerAddress()
+    // //         IPISBaseTokenLGE(_pisToken).transferCheckerAddress()
     // //     );
-    // //     _nerdWETHPair = INerdBaseTokenLGE(_nerdToken).getTokenUniswapPair();
-    // //     _nerdVault = INerdVault(0x47cE2237d7235Ff865E1C74bF3C6d9AF88d1bbfF);
+    // //     _pisWETHPair = IPISBaseTokenLGE(_pisToken).getTokenUniswapPair();
+    // //     _pisVault = IPISVault(0x47cE2237d7235Ff865E1C74bF3C6d9AF88d1bbfF);
     // //     refreshApproval();
     // // }
     // function refreshApproval() public {
-    //     IUniswapV2Pair(_nerdWETHPair).approve(address(_nerdVault), uint256(-1));
+    //     IUniswapV2Pair(_pisWETHPair).approve(address(_pisVault), uint256(-1));
     // }
     // event FeeApproverChanged(
     //     address indexed newAddress,
@@ -105,7 +105,7 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     }
     //     _addLiquidityETHOnlyForPool(pid, to, autoStake, _ethAmount, false);
     // }
-    // //this is only applied for pool 0: NERD-ETH
+    // //this is only applied for pool 0: PIS-ETH
     // function addLiquidityETHOnlyForPool(
     //     uint256 pid,
     //     address payable to,
@@ -138,15 +138,15 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     uint256 outPIS = 0;
     //     uint256 outOther = 0;
     //     {
-    //         //buy nerd
+    //         //buy pis
     //         address pairWithEth = _pisWETHPair;
-    //         (uint256 reserveWeth, uint256 reservenerd) = getPairReserves(
+    //         (uint256 reserveWeth, uint256 reservepis) = getPairReserves(
     //             pairWithEth
     //         );
     //         outPIS = UniswapV2Library.getAmountOut(
     //             buyAmount,
     //             reserveWeth,
-    //             reservenerd
+    //             reservepis
     //         );
     //         _WETH.transfer(pairWithEth, buyAmount);
     //         (address token0, address token1) = UniswapV2Library.sortTokens(
@@ -198,7 +198,7 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //         autoStake
     //     );
     // }
-    // //this is only applied for pool 0: NERD-ETH
+    // //this is only applied for pool 0: PIS-ETH
     // function addLiquidityETHOnly(address payable to, bool autoStake)
     //     public
     //     payable
@@ -209,7 +209,7 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     require(address(_WETH) != address(0), "invalid WETH");
     //     _WETH.deposit{value: msg.value}();
     //     (uint256 reserveWeth, uint256 reservePIS) = getPairReserves(
-    //         address(_nerdWETHPair)
+    //         address(_pisWETHPair)
     //     );
     //     uint256 outPIS = UniswapV2Library.getAmountOut(
     //         buyAmount,
@@ -240,30 +240,30 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     bool autoStake
     // ) internal {
     //     if (IERC20(pair).totalSupply() == 0) {
-    //         IERC20(_nerdToken).approve(_uniV2Router, uint256(-1));
+    //         IERC20(_pisToken).approve(_uniV2Router, uint256(-1));
     //         IERC20(otherAddress).approve(_uniV2Router, uint256(-1));
     //         if (autoStake) {
     //             IUniswapV2Router02(_uniV2Router).addLiquidity(
     //                 _pisToken,
     //                 otherAddress,
-    //                 nerdAmount,
+    //                 pisAmount,
     //                 otherAmount,
     //                 0,
     //                 0,
     //                 address(this),
     //                 block.timestamp + 100
     //             );
-    //             IUniswapV2Pair(pair).approve(address(_nerdVault), uint256(-1));
-    //             _nerdVault.depositFor(
+    //             IUniswapV2Pair(pair).approve(address(_pisVault), uint256(-1));
+    //             _pisVault.depositFor(
     //                 to,
     //                 pid,
     //                 IUniswapV2Pair(pair).balanceOf(address(this))
     //             );
     //         } else {
     //             IUniswapV2Router02(_uniV2Router).addLiquidity(
-    //                 _nerdToken,
+    //                 _pisToken,
     //                 otherAddress,
-    //                 nerdAmount,
+    //                 pisAmount,
     //                 otherAmount,
     //                 0,
     //                 0,
@@ -275,40 +275,40 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     }
     //     (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair)
     //         .getReserves();
-    //     (uint256 nerdReserve, uint256 otherTokenReserve) = (IUniswapV2Pair(pair)
+    //     (uint256 pisReserve, uint256 otherTokenReserve) = (IUniswapV2Pair(pair)
     //         .token0() == otherAddress)
     //         ? (reserve1, reserve0)
     //         : (reserve0, reserve1);
-    //     uint256 optimalnerdAmount = UniswapV2Library.quote(
+    //     uint256 optimalpisAmount = UniswapV2Library.quote(
     //         otherAmount,
     //         otherTokenReserve,
-    //         nerdReserve
+    //         pisReserve
     //     );
     //     uint256 optimalOtherAmount;
-    //     if (optimalnerdAmount > nerdAmount) {
+    //     if (optimalpisAmount > pisAmount) {
     //         optimalOtherAmount = UniswapV2Library.quote(
-    //             nerdAmount,
-    //             nerdReserve,
+    //             pisAmount,
+    //             pisReserve,
     //             otherTokenReserve
     //         );
-    //         optimalnerdAmount = nerdAmount;
+    //         optimalpisAmount = pisAmount;
     //     } else optimalOtherAmount = otherAmount;
     //     assert(IERC20(otherAddress).transfer(pair, optimalOtherAmount));
-    //     assert(IERC20(_nerdToken).transfer(pair, optimalnerdAmount));
+    //     assert(IERC20(_pisToken).transfer(pair, optimalpisAmount));
     //     if (autoStake) {
     //         IUniswapV2Pair(pair).mint(address(this));
-    //         IUniswapV2Pair(pair).approve(address(_nerdVault), uint256(-1));
-    //         _nerdVault.depositFor(
+    //         IUniswapV2Pair(pair).approve(address(_pisVault), uint256(-1));
+    //         _pisVault.depositFor(
     //             to,
     //             pid,
     //             IUniswapV2Pair(pair).balanceOf(address(this))
     //         );
     //     } else IUniswapV2Pair(pair).mint(to);
     //     //refund dust
-    //     if (IERC20(_nerdToken).balanceOf(address(this)) > 0)
-    //         IERC20(_nerdToken).transfer(
+    //     if (IERC20(_pisToken).balanceOf(address(this)) > 0)
+    //         IERC20(_pisToken).transfer(
     //             to,
-    //             IERC20(_nerdToken).balanceOf(address(this))
+    //             IERC20(_pisToken).balanceOf(address(this))
     //         );
     //     if (IERC20(otherAddress).balanceOf(address(this)) > 0) {
     //         IERC20(otherAddress).transfer(
@@ -318,43 +318,43 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     }
     // }
     // function _addLiquidityPool0(
-    //     uint256 nerdAmount,
+    //     uint256 pisAmount,
     //     uint256 wethAmount,
     //     address payable to,
     //     bool autoStake
     // ) internal {
-    //     (uint256 wethReserve, uint256 nerdReserve) = getPairReserves(
-    //         address(_nerdWETHPair)
+    //     (uint256 wethReserve, uint256 pisReserve) = getPairReserves(
+    //         address(_pisWETHPair)
     //     );
-    //     uint256 optimalnerdAmount = UniswapV2Library.quote(
+    //     uint256 optimalpisAmount = UniswapV2Library.quote(
     //         wethAmount,
     //         wethReserve,
-    //         nerdReserve
+    //         pisReserve
     //     );
     //     uint256 optimalWETHAmount;
-    //     if (optimalnerdAmount > nerdAmount) {
+    //     if (optimalpisAmount > pisAmount) {
     //         optimalWETHAmount = UniswapV2Library.quote(
-    //             nerdAmount,
-    //             nerdReserve,
+    //             pisAmount,
+    //             pisReserve,
     //             wethReserve
     //         );
-    //         optimalnerdAmount = nerdAmount;
+    //         optimalpisAmount = pisAmount;
     //     } else optimalWETHAmount = wethAmount;
-    //     assert(_WETH.transfer(_nerdWETHPair, optimalWETHAmount));
-    //     assert(IERC20(_nerdToken).transfer(_nerdWETHPair, optimalnerdAmount));
+    //     assert(_WETH.transfer(_pisWETHPair, optimalWETHAmount));
+    //     assert(IERC20(_pisToken).transfer(_pisWETHPair, optimalpisAmount));
     //     if (autoStake) {
-    //         IUniswapV2Pair(_nerdWETHPair).mint(address(this));
-    //         _nerdVault.depositFor(
+    //         IUniswapV2Pair(_pisWETHPair).mint(address(this));
+    //         _pisVault.depositFor(
     //             to,
     //             0,
-    //             IUniswapV2Pair(_nerdWETHPair).balanceOf(address(this))
+    //             IUniswapV2Pair(_pisWETHPair).balanceOf(address(this))
     //         );
-    //     } else IUniswapV2Pair(_nerdWETHPair).mint(to);
+    //     } else IUniswapV2Pair(_pisWETHPair).mint(to);
     //     //refund dust
-    //     if (IERC20(_nerdToken).balanceOf(address(this)) > 0)
-    //         IERC20(_nerdToken).transfer(
+    //     if (IERC20(_pisToken).balanceOf(address(this)) > 0)
+    //         IERC20(_pisToken).transfer(
     //             to,
-    //             IERC20(_nerdToken).balanceOf(address(this))
+    //             IERC20(_pisToken).balanceOf(address(this))
     //         );
     //     if (_WETH.balanceOf(address(this)) > 0) {
     //         uint256 withdrawAmount = _WETH.balanceOf(address(this));
@@ -372,25 +372,25 @@ contract FarmETHRouter is OwnableUpgradeSafe {
     //     view
     //     returns (uint256 liquidity)
     // {
-    //     (uint256 reserveWeth, uint256 reservenerd) = getPairReserves(
-    //         _nerdWETHPair
+    //     (uint256 reserveWeth, uint256 reservepis) = getPairReserves(
+    //         _pisWETHPair
     //     );
-    //     uint256 outnerd = UniswapV2Library.getAmountOut(
+    //     uint256 outpis = UniswapV2Library.getAmountOut(
     //         ethAmt.div(2),
     //         reserveWeth,
-    //         reservenerd
+    //         reservepis
     //     );
-    //     uint256 _totalSupply = IUniswapV2Pair(_nerdWETHPair).totalSupply();
+    //     uint256 _totalSupply = IUniswapV2Pair(_pisWETHPair).totalSupply();
     //     (address token0, ) = UniswapV2Library.sortTokens(
     //         address(_WETH),
-    //         _nerdToken
+    //         _pisToken
     //     );
-    //     (uint256 amount0, uint256 amount1) = token0 == _nerdToken
-    //         ? (outnerd, ethAmt.div(2))
-    //         : (ethAmt.div(2), outnerd);
-    //     (uint256 _reserve0, uint256 _reserve1) = token0 == _nerdToken
-    //         ? (reservenerd, reserveWeth)
-    //         : (reserveWeth, reservenerd);
+    //     (uint256 amount0, uint256 amount1) = token0 == _pisToken
+    //         ? (outpis, ethAmt.div(2))
+    //         : (ethAmt.div(2), outpis);
+    //     (uint256 _reserve0, uint256 _reserve1) = token0 == _pisToken
+    //         ? (reservepis, reserveWeth)
+    //         : (reserveWeth, reservepis);
     //     liquidity = Math.min(
     //         amount0.mul(_totalSupply) / _reserve0,
     //         amount1.mul(_totalSupply) / _reserve1

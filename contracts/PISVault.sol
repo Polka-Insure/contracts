@@ -15,9 +15,9 @@ contract TimeLockLPToken {
     using SafeMath for uint256;
     using Address for address;
 
-    uint256 public constant LP_LOCKED_PERIOD_WEEKS = 4; //10 weeks,
+    uint256 public constant LP_LOCKED_PERIOD_WEEKS = 4; //4 weeks,
     uint256 public constant LP_RELEASE_TRUNK = 1 weeks; //releasable every week,
-    uint256 public constant LP_INITIAL_LOCKED_PERIOD = 21 days;
+    uint256 public constant LP_INITIAL_LOCKED_PERIOD = 14 days;
     uint256 public constant LP_ACCUMULATION_FEE = 1; //1/1000
     address public constant ADDRESS_LOCKED_LP_ACCUMULATION = address(0);
 
@@ -81,22 +81,6 @@ contract TimeLockLPToken {
         return userInfo[_pid][_user].depositTime.add(LP_INITIAL_LOCKED_PERIOD);
     }
 
-    function getRemainingLP(uint256 _pid, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        return userInfo[_pid][_user].amount;
-    }
-
-    function getReferenceAmount(uint256 _pid, address _user)
-        public
-        view
-        returns (uint256)
-    {
-        return userInfo[_pid][_user].referenceAmount;
-    }
-
     function computeReleasableLP(uint256 _pid, address _addr)
         public
         view
@@ -107,7 +91,7 @@ contract TimeLockLPToken {
             return 0;
         }
 
-        uint256 amountLP = getReferenceAmount(_pid, _addr);
+        uint256 amountLP = userInfo[_pid][_addr].referenceAmount;
         if (amountLP == 0) return 0;
 
         uint256 totalReleasableTilNow = 0;
@@ -125,19 +109,11 @@ contract TimeLockLPToken {
         if (totalReleasableTilNow > amountLP) {
             totalReleasableTilNow = amountLP;
         }
-        uint256 alreadyReleased = amountLP.sub(getRemainingLP(_pid, _addr));
+        uint256 alreadyReleased = amountLP.sub(userInfo[_pid][_addr].amount);
         if (totalReleasableTilNow > alreadyReleased) {
             return totalReleasableTilNow.sub(alreadyReleased);
         }
         return 0;
-    }
-
-    function computeLockedLP(uint256 _pid, address _addr)
-        public
-        view
-        returns (uint256)
-    {
-        return getRemainingLP(_pid, _addr);
     }
 
     function weeksSinceLPReleaseTilNow(uint256 _pid, address _addr)
@@ -333,19 +309,6 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
             _allocPoint
         );
         poolInfo[_pid].allocPoint = _allocPoint;
-    }
-
-    // Update the given pool's ability to withdraw tokens
-    // Note contract owner is meant to be a governance contract allowing PIS governance consensus
-    function setPoolLockPeriod(uint256 _pid, uint256 _lockedPeriod)
-        public
-        onlyOwner
-    {
-        require(
-            isMultipleOfWeek(_lockedPeriod),
-            "Locked period must be a multiple of week"
-        );
-        poolInfo[_pid].lockedPeriod = _lockedPeriod;
     }
 
     function setEmergencyWithdrawable(uint256 _pid, bool _withdrawable)

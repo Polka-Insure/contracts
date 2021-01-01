@@ -45,6 +45,8 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
     address public publicSaleAddress;
     address public liquidityAddress;
 
+    address public shieldMiningAddress;
+
     uint256 public contractStartTimestamp;
 
     address public override devFundAddress;
@@ -94,7 +96,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
                 .mul(PRIVATE_SALE_PERCENT)
                 .div(100);
             lockedTokens[privateSaleAddress] = LockedToken({
-                unlockedTime: block.timestamp.add(3 weeks),
+                unlockedTime: block.timestamp.add(4 weeks),
                 amount: privateSaleAmount,
                 isUnlocked: false
             });

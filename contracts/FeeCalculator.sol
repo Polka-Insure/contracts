@@ -16,7 +16,6 @@ contract FeeCalculator is OwnableUpgradeSafe {
         pisTokenAddress = _pisAddress;
         feePercentX100 = 20;
         paused = true; // We start paused until sync post LGE happens.
-        //_editNoFeeList(0xC5cacb708425961594B63eC171f4df27a9c0d8c9, true); // nerdvault proxy
         _editNoFeeList(pisTokenAddress, true); //this is to not apply fees for transfer from the token contrat itself
     }
 
@@ -26,7 +25,7 @@ contract FeeCalculator is OwnableUpgradeSafe {
     bool paused;
     mapping(address => bool) public noFeeList;
 
-    // NERD token is pausable
+    // PIS token is pausable
     function setPaused(bool _pause) public onlyOwner {
         paused = _pause;
     }
@@ -62,7 +61,7 @@ contract FeeCalculator is OwnableUpgradeSafe {
         require(paused == false, "FEE APPROVER: Transfers Paused");
 
         if (noFeeList[sender]) {
-            // Dont have a fee when nerdvault is sending, or infinite loop
+            // Dont have a fee when pisvault is sending, or infinite loop
             transferToFeeDistributorAmount = 0;
             transferToAmount = amount;
         } else {

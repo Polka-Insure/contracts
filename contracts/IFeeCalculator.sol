@@ -15,7 +15,7 @@ interface IFeeCalculator {
 
     function setTokenUniswapPair(address _tokenUniswapPair) external;
 
-    function setPISTokenAddress(address _nerdTokenAddress) external;
+    function setPISTokenAddress(address _pisTokenAddress) external;
 
     function updateTxState() external;
 
