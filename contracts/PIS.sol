@@ -166,7 +166,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
 
     function unlockDevFund() public {
         for (uint256 i = 0; i < devFunds.length; i++) {
-            if (devFunds[i].unlockedTime > block.timestamp) break;
+            if (devFunds[i].unlockedTime >= block.timestamp) break;
             if (!devFunds[i].isUnlocked) {
                 devFunds[i].isUnlocked = true;
                 _transfer(address(this), devFundAddress, devFunds[i].amount);
@@ -176,7 +176,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
 
     function unlockPrivateSaleFund() public {
         require(
-            privateSaleLockedTokens.unlockedTime < block.timestamp &&
+            privateSaleLockedTokens.unlockedTime <= block.timestamp &&
                 privateSaleLockedTokens.amount > 0,
             "!unlock timing"
         );
@@ -192,7 +192,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
 
     function unlockPublicSaleFund() public {
         require(
-            publicSaleLockedTokens.unlockedTime < block.timestamp &&
+            publicSaleLockedTokens.unlockedTime <= block.timestamp &&
                 publicSaleLockedTokens.amount > 0,
             "!unlock timing"
         );
@@ -208,7 +208,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
 
     function unlockLiquidityFund() public {
         require(
-            liquidityLockedTokens.unlockedTime < block.timestamp &&
+            liquidityLockedTokens.unlockedTime <= block.timestamp &&
                 liquidityLockedTokens.amount > 0,
             "!unlock timing"
         );
