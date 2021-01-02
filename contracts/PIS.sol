@@ -36,9 +36,9 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
     uint256 public constant MAX_SUPPLY = 100000e18;
 
     uint256 public PRIVATE_SALE_PERCENT = 10; //10%
-    uint256 public PUBLIC_SALE_PERCENT = 35;
+    uint256 public PUBLIC_SALE_PERCENT = 30;
     uint256 public LIQUIDITY_PERCENT = 30;
-    uint256 public DEV_RESERVED_PERCENT = 5;
+    uint256 public TEAM_RESERVED_PERCENT = 10;
     uint256 public SHIELD_MINING_PERCENT = 20;
 
     address public privateSaleAddress;
@@ -126,11 +126,11 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
 
         _mint(address(this), initialMint);
         contractStartTimestamp = block.timestamp;
-        devFundTotal = MAX_SUPPLY.mul(DEV_RESERVED_PERCENT).div(100);
+        devFundTotal = MAX_SUPPLY.mul(TEAM_RESERVED_PERCENT).div(100);
         {
             //dev fund in 3 months, release every 2 weeks
             uint256 devFundPerRelease = devFundTotal.div(6);
-            for (uint256 i = 0; i < 6; i++) {
+            for (uint256 i = 0; i < 5; i++) {
                 devFunds.push(
                     LockedToken({
                         unlockedTime: block.timestamp + i.mul(2 weeks),
@@ -139,6 +139,13 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
                     })
                 );
             }
+            devFunds.push(
+                LockedToken({
+                    unlockedTime: block.timestamp + 5.mul(2 weeks),
+                    amount: devFundTotal.sub(devFundPerRelease.mul(5)),
+                    isUnlocked: false
+                })
+            );
         }
     }
 
@@ -325,7 +332,6 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
         _balances[recipient] = _balances[recipient].add(transferToAmount);
         emit Transfer(sender, recipient, transferToAmount);
 
-        //transferToFeeDistributorAmount is total rewards fees received for genesis pool (this contract) and farming pool
         if (
             transferToFeeDistributorAmount > 0 && feeDistributor != address(0)
         ) {
