@@ -52,7 +52,10 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
     address public override devFundAddress;
     uint256 public devFundTotal;
 
-    mapping(address => LockedToken) public lockedTokens;
+    LockedToken public privateSaleLockedTokens;
+    LockedToken public publicSaleLockedTokens;
+    LockedToken public liquidityLockedTokens;
+
     LockedToken[] public devFunds;
 
     function name() public view returns (string memory) {
@@ -95,7 +98,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
             uint256 privateSaleAmount = MAX_SUPPLY
                 .mul(PRIVATE_SALE_PERCENT)
                 .div(100);
-            lockedTokens[privateSaleAddress] = LockedToken({
+            privateSaleLockedTokens = LockedToken({
                 unlockedTime: block.timestamp.add(4 weeks),
                 amount: privateSaleAmount,
                 isUnlocked: false
@@ -106,7 +109,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
             uint256 publicSaleAmount = MAX_SUPPLY.mul(PUBLIC_SALE_PERCENT).div(
                 100
             );
-            lockedTokens[publicSaleAddress] = LockedToken({
+            publicSaleLockedTokens = LockedToken({
                 unlockedTime: block.timestamp,
                 amount: publicSaleAmount,
                 isUnlocked: false
@@ -117,7 +120,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
             uint256 liquiditySaleAmount = MAX_SUPPLY.mul(LIQUIDITY_PERCENT).div(
                 100
             );
-            lockedTokens[liquidityAddress] = LockedToken({
+            liquidityLockedTokens = LockedToken({
                 unlockedTime: block.timestamp,
                 amount: liquiditySaleAmount,
                 isUnlocked: false
@@ -171,16 +174,52 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
         }
     }
 
-    function unlockLockedFund(address _receiver) public {
+    function unlockPrivateSaleFund() public {
         require(
-            lockedTokens[_receiver].unlockedTime < block.timestamp &&
-                lockedTokens[_receiver].amount > 0,
+            privateSaleLockedTokens.unlockedTime < block.timestamp &&
+                privateSaleLockedTokens.amount > 0,
             "!unlock timing"
         );
 
-        require(!lockedTokens[_receiver].isUnlocked, "already unlock");
-        lockedTokens[_receiver].isUnlocked = true;
-        _transfer(address(this), _receiver, lockedTokens[_receiver].amount);
+        require(!privateSaleLockedTokens.isUnlocked, "already unlock");
+        privateSaleLockedTokens.isUnlocked = true;
+        _transfer(
+            address(this),
+            privateSaleAddress,
+            privateSaleLockedTokens.amount
+        );
+    }
+
+    function unlockPublicSaleFund() public {
+        require(
+            publicSaleLockedTokens.unlockedTime < block.timestamp &&
+                publicSaleLockedTokens.amount > 0,
+            "!unlock timing"
+        );
+
+        require(!publicSaleLockedTokens.isUnlocked, "already unlock");
+        publicSaleLockedTokens.isUnlocked = true;
+        _transfer(
+            address(this),
+            publicSaleAddress,
+            publicSaleLockedTokens.amount
+        );
+    }
+
+    function unlockLiquidityFund() public {
+        require(
+            liquidityLockedTokens.unlockedTime < block.timestamp &&
+                liquidityLockedTokens.amount > 0,
+            "!unlock timing"
+        );
+
+        require(!liquidityLockedTokens.isUnlocked, "already unlock");
+        liquidityLockedTokens.isUnlocked = true;
+        _transfer(
+            address(this),
+            liquidityAddress,
+            liquidityLockedTokens.amount
+        );
     }
 
     function symbol() public view returns (string memory) {

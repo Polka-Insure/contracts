@@ -35,7 +35,6 @@ contract('PIS Vault Test', ([alice, privateSale, publicSale, liquidity, dev, sup
         this.pis = await PISToken.new(privateSale, publicSale, liquidity, dev, { from: alice });
 
         assert.equal(initialMinted, (await this.pis.balanceOf(this.pis.address)).valueOf().toString());
-        let liquidityAmount = (await this.pis.lockedTokens(liquidity)).valueOf().amount.toString();
 
         this.feeCalculator = await FeeCalculator.new({ from: alice });
         await this.feeCalculator.initialize(this.pis.address, { from: alice });
@@ -45,13 +44,13 @@ contract('PIS Vault Test', ([alice, privateSale, publicSale, liquidity, dev, sup
         await this.feeCalculator.setPaused(false, { from: alice });
         await this.feeCalculator.setFeeMultiplier(0, { from: alice });
 
-        await this.pis.unlockLockedFund(liquidity, { from: liquidity });
-        await expectRevert(this.pis.unlockLockedFund(liquidity, { from: liquidity }), "already unlock");
+        await this.pis.unlockLiquidityFund({ from: liquidity });
+        await expectRevert(this.pis.unlockLiquidityFund({ from: liquidity }), "already unlock");
         let expectedLiquidityAmount = bn(totalSupply).multipliedBy(30).dividedBy(100).toFixed(0);
         assert.equal(expectedLiquidityAmount, (await this.pis.balanceOf(liquidity)).valueOf().toString());
 
-        await this.pis.unlockLockedFund(publicSale, { from: publicSale });
-        await expectRevert(this.pis.unlockLockedFund(publicSale, { from: publicSale }), "already unlock");
+        await this.pis.unlockPublicSaleFund({ from: publicSale });
+        await expectRevert(this.pis.unlockPublicSaleFund({ from: publicSale }), "already unlock");
         let expectedPublicSaleAmount = bn(totalSupply).multipliedBy(30).dividedBy(100).toFixed(0);
         assert.equal(expectedPublicSaleAmount, (await this.pis.balanceOf(publicSale)).valueOf().toString());
 
@@ -87,6 +86,13 @@ contract('PIS Vault Test', ([alice, privateSale, publicSale, liquidity, dev, sup
         assert.equal(devFundTotal, (await this.pis.balanceOf(dev)).valueOf().toString());
 
         await this.pis.transfer(clean1, '1000000000', { from: publicSale });
+    });
+
+    it('Unlock private sale', async () => {
+        await time.increase(86400 * 7 * 4 + 1);
+        await this.pis.unlockPrivateSaleFund({ from: privateSale });
+        let privateSaleExpectedAmount = new BN(totalSupply).multipliedBy(10).dividedBy(100).toFixed(0);
+        assert.equal(privateSaleExpectedAmount, (await this.pis.balanceOf(privateSale)).valueOf().toString());
     });
 
     it('PISVault should have pending fees set correctly and correct balance', async () => {
