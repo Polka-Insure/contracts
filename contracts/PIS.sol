@@ -141,7 +141,7 @@ contract PIS is Context, IPISBaseTokenEx, Ownable {
             }
             devFunds.push(
                 LockedToken({
-                    unlockedTime: block.timestamp + 5.mul(2 weeks),
+                    unlockedTime: block.timestamp + uint256(5).mul(2 weeks),
                     amount: devFundTotal.sub(devFundPerRelease.mul(5)),
                     isUnlocked: false
                 })
