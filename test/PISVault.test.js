@@ -23,127 +23,27 @@ function bn(x) {
 }
 
 const totalSupply = toWei('100000');
-const initialETHLiquidity = toWei(80);
-const initialMinted = new BN(totalSupply).multipliedBy(80).dividedBy(100).toFixed(0);
-const DEV_FEE = 724;
 
 contract('PIS Vault Test', (accounts) => {
     let [alice, privateSale, publicSale, liquidity, dev, superAdmin, clean1, clean2, clean3, clean4, clean5, clean6] = accounts.slice(0, 12);
     let dummyAccounts = accounts.slice(12);
+    dev = "0x26755cb0be9ee2f7d1183edbc342c2cee0e9cfb5";
     async function setPisVault(t) {
-        t.pisvault = await PISVault.new({ from: alice });
-        await t.pisvault.initialize(t.pis.address, { from: alice });
-        await t.pis.setFeeDistributor(t.pisvault.address, { from: alice });
-        await t.feeCalculator.setPISVaultAddress(t.pisvault.address, { from: alice });
-        await t.feeCalculator.setFeeMultiplier(20, { from: alice });
-        await t.feeCalculator.editNoFeeList(t.pisvault.address, true, { from: alice });
-
-        await t.pis.transfer(clean1, '1000', { from: publicSale });
-        let expectedFee = new BN(20 * 1000 / 1000).toFixed();    //2% fee
-        assert.equal((await t.pisvault.pendingRewards()).valueOf().toString(), expectedFee);
-        assert.equal((await t.pis.balanceOf(t.pisvault.address)), expectedFee);
+        let pisvaultAddress = (await t.pis.feeDistributor()).valueOf().toString();
+        t.pisvault = await PISVault.at(pisvaultAddress);
     };
 
     beforeEach(async () => {
         await testconfig.readUniswap(this);
+        await setPisVault(this);
+        await testconfig.transferOwnership(alice);
 
         await this.weth.deposit({ from: alice, value: toWei('1000') })
-        this.pis = await PISToken.new(privateSale, publicSale, liquidity, dev, { from: alice });
-
-        assert.equal(initialMinted, (await this.pis.balanceOf(this.pis.address)).valueOf().toString());
-
-        this.feeCalculator = await FeeCalculator.new({ from: alice });
-        await this.feeCalculator.initialize(this.pis.address, { from: alice });
-        await this.feeCalculator.editNoFeeList(liquidity, true, { from: alice });
-
-        await this.pis.setTransferChecker(this.feeCalculator.address, { from: alice });
-        await this.feeCalculator.setPaused(false, { from: alice });
-        await this.feeCalculator.setFeeMultiplier(0, { from: alice });
-
-        await this.pis.unlockLiquidityFund({ from: liquidity });
-        await expectRevert(this.pis.unlockLiquidityFund({ from: liquidity }), "already unlock");
-        let expectedLiquidityAmount = bn(totalSupply).multipliedBy(30).dividedBy(100).toFixed(0);
-        assert.equal(expectedLiquidityAmount, (await this.pis.balanceOf(liquidity)).valueOf().toString());
-
-        await this.pis.unlockPublicSaleFund({ from: publicSale });
-        await expectRevert(this.pis.unlockPublicSaleFund({ from: publicSale }), "already unlock");
-        let expectedPublicSaleAmount = bn(totalSupply).multipliedBy(30).dividedBy(100).toFixed(0);
-        assert.equal(expectedPublicSaleAmount, (await this.pis.balanceOf(publicSale)).valueOf().toString());
-
-        await this.pis.approve(this.router.address, expectedLiquidityAmount, { from: liquidity });
-        let currentTime = await time.latest();
-        await this.router.addLiquidityETH(this.pis.address, expectedLiquidityAmount, expectedLiquidityAmount, 0, liquidity, bn(currentTime).plus(100).toFixed(0), { from: liquidity, value: initialETHLiquidity });
-        this.pisWETHPair = await UniswapV2Pair.at(await this.factory.getPair(this.weth.address, this.pis.address));
-
-        //unlock dev fund
-        let devFundTotal = bn(totalSupply).multipliedBy(10).dividedBy(100).toFixed(0);
-        let devFundPer2Weeks = bn(devFundTotal).dividedBy(6).toFixed(0);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(devFundPer2Weeks, (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await time.increase(86400 * 7 * 2 + 1);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(new BN(devFundPer2Weeks).multipliedBy(2).toFixed(0), (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await time.increase(86400 * 7 * 2 + 1);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(new BN(devFundPer2Weeks).multipliedBy(3).toFixed(0), (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await time.increase(86400 * 7 * 2 + 1);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(new BN(devFundPer2Weeks).multipliedBy(4).toFixed(0), (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await time.increase(86400 * 7 * 2 + 1);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(new BN(devFundPer2Weeks).multipliedBy(5).toFixed(0), (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await time.increase(86400 * 7 * 2 + 1);
-        await this.pis.unlockDevFund({ from: dev });
-        assert.equal(devFundTotal, (await this.pis.balanceOf(dev)).valueOf().toString());
-
-        await this.pis.transfer(clean1, '1000000000', { from: publicSale });
-    });
-
-    it('Unlock private sale', async () => {
-        await time.increase(86400 * 7 * 4 + 1);
-        await this.pis.unlockPrivateSaleFund({ from: privateSale });
-        let privateSaleExpectedAmount = new BN(totalSupply).multipliedBy(10).dividedBy(100).toFixed(0);
-        assert.equal(privateSaleExpectedAmount, (await this.pis.balanceOf(privateSale)).valueOf().toString());
-    });
-
-    it('PISVault should have pending fees set correctly and correct balance', async () => {
-        //deploy vault
-        await setPisVault(this);
-    });
-
-    it('Buy and sell token', async () => {
-        this.pisvault = await PISVault.new({ from: alice });
-        await this.pisvault.initialize(this.pis.address, { from: alice });
-        await this.pis.setFeeDistributor(this.pisvault.address, { from: alice });
-        await this.feeCalculator.setPISVaultAddress(this.pisvault.address, { from: alice });
-        await this.feeCalculator.setFeeMultiplier(20, { from: alice });
-
-        let balBefore = (await this.pis.balanceOf(clean2)).valueOf().toString();
-        await this.router.swapExactETHForTokensSupportingFeeOnTransferTokens('1', [await this.router.WETH(), this.pis.address], clean2, 25999743005, { from: clean2, value: toWei('5') });
-        let balAfter = (await this.pis.balanceOf(clean2)).valueOf().toString();
-        let boughtAmount = new BN(balAfter).minus(new BN(balBefore)).toFixed(0);
-        assert.notEqual('0', (await this.pisvault.pendingRewards()).valueOf().toString());
-        let pendingRewards = (await this.pisvault.pendingRewards()).valueOf().toString();
-        //approve
-        let soldAmount = new BN(boughtAmount).dividedBy(2).toFixed();
-        await this.pis.approve(this.router.address, boughtAmount, { from: clean2 });
-        await this.router.swapExactTokensForETHSupportingFeeOnTransferTokens(soldAmount, 0, [this.pis.address, await this.router.WETH()], clean2, 25999743005, { from: clean2 });
-        assert.equal(new BN(soldAmount).multipliedBy(2).dividedBy(100).plus(pendingRewards).toFixed(0), (await this.pisvault.pendingRewards()).valueOf().toString());
     });
 
     it('Releasable tokens with time lock and penalty is correctly computed', async () => {
-        await setPisVault(this);
-
-        assert.equal('0', (await this.pisvault.poolLength()).valueOf().toString())
-
-        await this.pisvault.add(1000, this.pisWETHPair.address, true, { from: alice });
         assert.equal('1', (await this.pisvault.poolLength()).valueOf().toString())
-
+        this.pisWETHPair = await UniswapV2Pair.at(await this.factory.getPair(testconfig.wethAddress, this.pis.address));
         await this.router.swapExactETHForTokensSupportingFeeOnTransferTokens('1', [await this.router.WETH(), this.pis.address], clean2, 25999743005, { from: clean2, value: toWei('1') });
         await this.pis.approve(this.router.address, new BN('1e36').toFixed(0), { from: clean2 });
         let clean2PisBalance = (await this.pis.balanceOf(clean2)).valueOf().toString();
