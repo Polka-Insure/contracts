@@ -18,8 +18,6 @@ contract TimeLockLPToken {
     uint256 public constant LP_LOCKED_PERIOD_WEEKS = 4; //4 weeks,
     uint256 public constant LP_RELEASE_TRUNK = 1 weeks; //releasable every week,
     uint256 public constant LP_INITIAL_LOCKED_PERIOD = 14 days;
-    uint256 public constant LP_ACCUMULATION_FEE = 1; //1/1000
-    address public constant ADDRESS_LOCKED_LP_ACCUMULATION = address(0);
 
     // Info of each user.
     struct UserInfo {
@@ -146,7 +144,7 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
     uint256 public epoch;
 
     uint256 public constant REWARD_LOCKED_PERIOD = 28 days;
-    uint256 public constant REWARD_RELEASE_PERCENTAGE = 85;
+    uint256 public constant REWARD_RELEASE_PERCENTAGE = 40;
     uint256 public contractStartBlock;
 
     uint256 private pisBalance;
@@ -157,8 +155,6 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
     uint16 DEV_FEE;
 
     uint256 public pending_DEV_rewards;
-
-    address private _superAdmin;
 
     // Returns fees generated since start of this contract
     function averageFeesPerBlockSinceStart(uint256 _pid)
@@ -227,16 +223,12 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
         uint256 value
     );
 
-    function initialize(IPISBaseTokenEx _pis, address superAdmin)
-        public
-        initializer
-    {
+    function initialize(IPISBaseTokenEx _pis) public initializer {
         OwnableUpgradeSafe.__Ownable_init();
-        DEV_FEE = 100;
+        DEV_FEE = 1000; //10%
         pis = _pis;
         devaddr = pis.devFundAddress();
         contractStartBlock = block.number;
-        _superAdmin = superAdmin;
     }
 
     function poolLength() external view returns (uint256) {
@@ -259,6 +251,7 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
         IERC20 _token,
         bool _withUpdate
     ) public onlyOwner {
+        require(address(_token) != address(pis), "!PIS token");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -415,8 +408,6 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
         uint256 rewardToDistribute = pisRewardWhole.sub(rewardFee);
 
         uint256 inc = rewardToDistribute.mul(1e18).div(tokenSupply);
-        rewardToDistribute = tokenSupply.mul(inc).div(1e18);
-        rewardFee = pisRewardWhole.sub(rewardToDistribute);
         pending_DEV_rewards = pending_DEV_rewards.add(rewardFee);
 
         pool.accPISPerShare = pool.accPISPerShare.add(inc);
@@ -612,35 +603,6 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
         }
     }
 
-    // function that lets owner/governance contract
-    // approve allowance for any token inside this contract
-    // This means all future UNI like airdrops are covered
-    // And at the same time allows us to give allowance to strategy contracts.
-    // Upcoming cYFI etc vaults strategy contracts will  se this function to manage and farm yield on value locked
-    function setStrategyContractOrDistributionContractAllowance(
-        address tokenAddress,
-        uint256 _amount,
-        address contractAddress
-    ) public onlySuperAdmin {
-        require(
-            isContract(contractAddress),
-            "Recipent is not a smart contract, BAD"
-        );
-        require(
-            block.number > contractStartBlock.add(95_000),
-            "Governance setup grace period not over"
-        );
-        IERC20(tokenAddress).approve(contractAddress, _amount);
-    }
-
-    function isContract(address addr) public view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
-    }
-
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         require(
@@ -685,37 +647,6 @@ contract PISVault is OwnableUpgradeSafe, TimeLockLPToken {
     function setDevFeeReciever(address _devaddr) public {
         require(devaddr == msg.sender, "only dev can change");
         devaddr = _devaddr;
-    }
-
-    event SuperAdminTransfered(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    function superAdmin() public view returns (address) {
-        return _superAdmin;
-    }
-
-    modifier onlySuperAdmin() {
-        require(
-            _superAdmin == _msgSender(),
-            "Super admin : caller is not super admin."
-        );
-        _;
-    }
-
-    function burnSuperAdmin() public virtual onlySuperAdmin {
-        emit SuperAdminTransfered(_superAdmin, address(0));
-        _superAdmin = address(0);
-    }
-
-    function newSuperAdmin(address newOwner) public virtual onlySuperAdmin {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address"
-        );
-        emit SuperAdminTransfered(_superAdmin, newOwner);
-        _superAdmin = newOwner;
     }
 
     function getLiquidityInfo(uint256 _pid)
